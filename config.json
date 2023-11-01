@@ -1,0 +1,8 @@
+{
+  "statusFile": "status.json",
+  "motionEndpointUrl": "http://localhost:40080/v0/blob",
+  "bucketName": "motion-test-data-corpus",
+  "s3Config": {
+    "region": "us-east-2"
+  }
+}

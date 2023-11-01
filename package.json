@@ -1,0 +1,26 @@
+{
+  "name": "motion-sp-test",
+  "version": "1.0.0",
+  "description": "SP testing application for github.com/filecoin-project/motion",
+  "type": "module",
+  "private": true,
+  "main": "sptest.js",
+  "scripts": {
+    "start": "node sptest.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/filecoin-project/motion-sp-test.git"
+  },
+  "author": "Rod Vagg <rod@vagg.org>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/filecoin-project/motion-sp-test/issues"
+  },
+  "homepage": "https://github.com/filecoin-project/motion-sp-test#readme",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.438.0",
+    "aws-sdk": "^2.1484.0",
+    "undici": "^5.27.0"
+  }
+}
