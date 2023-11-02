@@ -13,6 +13,8 @@ const require = createRequire(import.meta.url)
 // let the IAM role deal with it.
 const { statusFile, motionEndpointUrl, bucketName, s3Config } = require('./config.json')
 
+const tickTime = 1000 * 10 // 10 seconds
+
 // Alternatively, create a separate credentials.json file with "accessKeyId"
 // and "secretAccessKey" to use specific credentials.
 try {
@@ -44,13 +46,14 @@ if (isTruncated) {
 // a setInterval to stop us from tripping over ourselves, so we do a full update
 // and pause for 5 seconds before trying again.
 function updateTick () {
-  updateFilesStatus().catch((error) => {
+  updateFilesStatus().then(() => {
+    setTimeout(updateTick, tickTime) // repeat
+  }).catch((error) => {
     console.error('Error:', error)
     process.exit(1)
   })
-  setTimeout(updateTick, 5000)
 }
-setTimeout(updateTick, 5000)
+setTimeout(updateTick, tickTime)
 
 // Store all the files (if needed)
 await storeFiles()
