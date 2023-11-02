@@ -23,6 +23,7 @@ try {
 } catch { }
 
 let fileMeta = {}
+let fileMetaDirty = false
 // load from statusFile if it exists
 try {
   if (path.isAbsolute(statusFile)) {
@@ -72,6 +73,7 @@ async function storeFiles () {
     try {
       const response = await storeFile(s3, fileName, bucketName)
       fileMeta[response.id] = response
+      fileMetaDirty = true
     } catch (error) {
       console.error('Error:', error)
       process.exit(1)
@@ -113,7 +115,8 @@ async function updateFilesStatus () {
       console.error(`File ${data.file} status has been updated`)
     }
   }))
-  if (changed) {
+  if (changed || fileMetaDirty) {
+    fileMetaDirty = false
     await writeStatusFile()
   }
 }
