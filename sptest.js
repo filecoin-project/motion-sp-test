@@ -179,7 +179,7 @@ async function checkFileStatus (data) {
 }
 
 async function writeStatusFile () {
-  console.error('Writing status file to disk...')
+  process.stderr.write('Writing status file to disk...')
   const tmpStatusFile = '.status.json'
   const fd = await fsopen(tmpStatusFile, 'w')
   await fd.write('{\n')
@@ -195,5 +195,5 @@ async function writeStatusFile () {
   await fd.write('}\n')
   await fd.close()
   await fsrename(tmpStatusFile, statusFile)
-  console.error('Done')
+  console.error(' Done')
 }

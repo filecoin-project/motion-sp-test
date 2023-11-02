@@ -1,6 +1,6 @@
-import { GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 
-export async function getObjectList(s3, bucket) {
+export async function getObjectList (s3, bucket) {
   const listCommand = new ListObjectsV2Command({ Bucket: bucket })
   let isTruncated = true
   let contents = []
@@ -13,7 +13,7 @@ export async function getObjectList(s3, bucket) {
   return { contents, isTruncated }
 }
 
-export async function getObjectStream(s3, bucket, key) {
+export async function getObjectStream (s3, bucket, key) {
   const getCommand = new GetObjectCommand({ Bucket: bucket, Key: key })
   const { Body } = await s3.send(getCommand)
   return Body
