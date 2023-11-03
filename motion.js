@@ -13,7 +13,7 @@ function claimClientFor (url) {
   if (clients[key] === undefined || clients[key].length === 0) {
     return new Client(key)
   }
-  return clients[key][0]
+  return clients[key].shift()
 }
 
 function returnClientFor (url, client) {
