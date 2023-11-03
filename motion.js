@@ -3,20 +3,28 @@ import { Client } from 'undici'
 
 const clients = {}
 
-function clientFor (url) {
-  // cache the Client per host connection
+function claimClientFor (url) {
+  const u = new URL(url)
+  const clientUrl = `${u.protocol}//${u.host}`
+  if (clients[clientUrl] === undefined || clients[clientUrl].length === 0) {
+    return new Client(clientUrl)
+  }
+  return clients[clientUrl][0]
+}
+
+function returnClientFor (url, client) {
   const u = new URL(url)
   const clientUrl = `${u.protocol}//${u.host}`
   if (clients[clientUrl] === undefined) {
-    clients[clientUrl] = new Client(clientUrl)
+    clients[clientUrl] = []
   }
-  return clients[clientUrl]
+  clients[clientUrl].push(client)
 }
 
 export class PostStream extends Writable {
   constructor (endpointUrl) {
     super()
-    this.client = clientFor(endpointUrl)
+    this.client = claimClientFor(endpointUrl)
     this.path = new URL(endpointUrl).pathname
     this.bytes = 0
   }
@@ -43,6 +51,7 @@ export class PostStream extends Writable {
         onComplete: () => {
           try {
             this.resp = JSON.parse(Buffer.concat(data).toString('utf8'))
+            returnClientFor(this.client)
             resolve()
           } catch (error) {
             reject(error)
@@ -77,7 +86,7 @@ export class PostStream extends Writable {
 
 export async function getStatus (endpointUrl, id) {
   const url = `${endpointUrl}/${id}/status`
-  const client = clientFor(url)
+  const client = claimClientFor(url)
   const { body, statusCode } = await client.request({
     path: new URL(url).pathname,
     method: 'GET'
@@ -89,5 +98,6 @@ export async function getStatus (endpointUrl, id) {
   for await (const chunk of body) {
     data.push(chunk)
   }
+  returnClientFor(url, client)
   return JSON.parse(Buffer.concat(data).toString('utf8'))
 }

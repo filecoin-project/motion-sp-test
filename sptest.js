@@ -62,7 +62,12 @@ await storeFiles()
 // already been stored. This is a serial process, one file at a time so we have
 // clearer timings to record.
 async function storeFiles () {
+  let c = 0
   for (const fileName of files) {
+    // only include json files
+    // if (!fileName.endsWith('.json')) {
+    //  continue
+    //}
     let stored = false
     for (const { file } of Object.values(fileMeta)) {
       if (fileName === file) {
@@ -72,6 +77,9 @@ async function storeFiles () {
     }
     if (stored) {
       continue
+    }
+    if (c++ >= 10) {
+      break
     }
     try {
       const response = await storeFile(s3, fileName, bucketName)
@@ -112,12 +120,12 @@ async function storeFile (s3, key, bucketName) {
 // disk.
 async function updateFilesStatus () {
   let changed = false
-  await Promise.all(Object.entries(fileMeta).map(async ([id, data]) => {
+  for (const [id, data] of Object.entries(fileMeta)) {
     if (await checkFileStatus(data)) {
       changed = true
       console.error(`File ${data.file} status has been updated`)
     }
-  }))
+  }
   if (changed || fileMetaDirty) {
     fileMetaDirty = false
     await writeStatusFile()
