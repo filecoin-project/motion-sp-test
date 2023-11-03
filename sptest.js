@@ -62,7 +62,6 @@ await storeFiles()
 // already been stored. This is a serial process, one file at a time so we have
 // clearer timings to record.
 async function storeFiles () {
-  let c = 0
   for (const fileName of files) {
     // only include json files
     // if (!fileName.endsWith('.json')) {
@@ -77,9 +76,6 @@ async function storeFiles () {
     }
     if (stored) {
       continue
-    }
-    if (c++ >= 10) {
-      break
     }
     try {
       const response = await storeFile(s3, fileName, bucketName)
