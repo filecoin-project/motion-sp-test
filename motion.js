@@ -3,27 +3,31 @@ import { Client } from 'undici'
 
 const clients = {}
 
-function claimClientFor (url) {
+function clientKey (url) {
   const u = new URL(url)
-  const clientUrl = `${u.protocol}//${u.host}`
-  if (clients[clientUrl] === undefined || clients[clientUrl].length === 0) {
-    return new Client(clientUrl)
+  return `${u.protocol}//${u.host}`
+}
+
+function claimClientFor (url) {
+  const key = clientKey(url)
+  if (clients[key] === undefined || clients[key].length === 0) {
+    return new Client(key)
   }
-  return clients[clientUrl][0]
+  return clients[key][0]
 }
 
 function returnClientFor (url, client) {
-  const u = new URL(url)
-  const clientUrl = `${u.protocol}//${u.host}`
-  if (clients[clientUrl] === undefined) {
-    clients[clientUrl] = []
+  const key = clientKey(url)
+  if (clients[key] === undefined) {
+    clients[key] = []
   }
-  clients[clientUrl].push(client)
+  clients[key].push(client)
 }
 
 export class PostStream extends Writable {
   constructor (endpointUrl) {
     super()
+    this.endpointUrl = endpointUrl
     this.client = claimClientFor(endpointUrl)
     this.path = new URL(endpointUrl).pathname
     this.bytes = 0
@@ -51,7 +55,7 @@ export class PostStream extends Writable {
         onComplete: () => {
           try {
             this.resp = JSON.parse(Buffer.concat(data).toString('utf8'))
-            returnClientFor(this.client)
+            returnClientFor(this.endpointUrl, this.client)
             resolve()
           } catch (error) {
             reject(error)
