@@ -8,9 +8,33 @@ Status data is written to status.json, which is updated as the test progresses. 
 
 status.json can be used to determine timings for the various stages of the test; including data onboarding time, replica status progress and timing for each change, and details about the replicas themselves. It also includes a sha2-256 digest of each onboarded file, which can be used to test retrievals through Motion to ensure the data is intact.
 
-Currently does not feature retrieval functionality, this wil be added in future to test and benchmark fetching.
-
 ```
 npm install
 npm start
+# or just ./sptest.js
+```
+
+## Retrieval testing
+
+Running `./retrieve.js` will perform retrievals against the Motion instance configured in config.json against the stored files recorded in the status file (status.json by default). It will retrieve files in random order, and will only retrieve files that have been successfully onboarded. The retrieved files are checked against the stored sha2-256 digest to ensure they are intact. Speed, TTFB and TTLB are recorded and the averages are printed.
+
+```
+Usage: retrieve.js [options]
+Options:
+    --min <size>        Minimum file size to consider (default 0)
+    --max <size>        Maximum file size to consider (default Infinity)
+    --duration <time>   Duration to run for (default 5m)
+```
+
+### Example
+
+```
+./retrieve.js --min 50MiB --max 100MiB --duration 30s
+Testing retrieval using random selection from 162 files between 52.43 MB and 104.86 MB for 30 seconds
+Fetching .........................
+Files fetched: 25
+Average size:  73.07 MB
+Average speed: 58.75 MB / s
+Average TTFB:  4.385012 ms
+Average TTLB:  1243.455994 ms
 ```
