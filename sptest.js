@@ -1,10 +1,12 @@
+#!/usr/bin/env node
+
 import { createRequire } from 'node:module'
 import { open as fsopen, rename as fsrename } from 'node:fs/promises'
 import { S3Client } from '@aws-sdk/client-s3'
 import { getObjectList, getObjectStream } from './s3.js'
 import { postBlob } from './postblob.js'
 import { getStatus } from './motion.js'
-import path from 'node:path'
+import { isAbsolute } from 'node:path'
 
 const require = createRequire(import.meta.url)
 
@@ -28,7 +30,7 @@ let fileMeta = {}
 let fileMetaDirty = false
 // load from statusFile if it exists
 try {
-  if (path.isAbsolute(statusFile)) {
+  if (isAbsolute(statusFile)) {
     fileMeta = require(statusFile)
   } else {
     fileMeta = require(`./${statusFile}`)
@@ -66,7 +68,7 @@ async function storeFiles () {
     // only include json files
     // if (!fileName.endsWith('.json')) {
     //  continue
-    //}
+    // }
     let stored = false
     for (const { file } of Object.values(fileMeta)) {
       if (fileName === file) {
@@ -116,7 +118,7 @@ async function storeFile (s3, key, bucketName) {
 // disk.
 async function updateFilesStatus () {
   let changed = false
-  for (const [id, data] of Object.entries(fileMeta)) {
+  for (const [, data] of Object.entries(fileMeta)) {
     if (await checkFileStatus(data)) {
       changed = true
       console.error(`File ${data.file} status has been updated`)
