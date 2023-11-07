@@ -167,6 +167,15 @@ async function checkFileStatus (data) {
       if (typeof status !== 'string') {
         throw new Error(`Piece for ${data.id} has no status on ${provider}`)
       }
+      if (status === 'proposal_expired') {
+        // Ignore these for now, when we have a uniqueness property whereby we can properly allocate
+        // these to specific replicas then we can track them; for now, we can't do anything useful
+        // with non-linear proposed->active transitions. Unfortunately this means we also can't
+        // track the proposed->expired->proposed->active transitions, these will just look like
+        // proposed->active, skipping the expired and re-proposed state.
+        // See https://github.com/filecoin-project/motion/issues/216
+        continue
+      }
       let found = false
       for (const piece of data.pieces) {
         if (piece.provider === provider && piece.cid === pieceCid) {
