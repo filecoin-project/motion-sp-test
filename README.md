@@ -21,20 +21,21 @@ Running `./retrieve.js` will perform retrievals against the Motion instance conf
 ```
 Usage: retrieve.js [options]
 Options:
-    --min <size>        Minimum file size to consider (default 0)
-    --max <size>        Maximum file size to consider (default Infinity)
-    --duration <time>   Duration to run for (default 5m)
+    --min <size>              Minimum file size to consider (optional, default 0)
+    --max <size>              Maximum file size to consider (optional, default Infinity)
+    --duration <time>         Duration to run for (optional, default 5m)
+    --state any|local|remote  Only consider files with this state (optional, default any)
 ```
 
 ### Example
 
 ```
-./retrieve.js --min 50MiB --max 100MiB --duration 30s
-Testing retrieval using random selection from 162 files between 52.43 MB and 104.86 MB for 30 seconds
-Fetching .........................
-Files fetched: 25
-Average size:  73.07 MB
-Average speed: 58.75 MB / s
-Average TTFB:  4.385012 ms
-Average TTLB:  1243.455994 ms
+./retrieve.js --min 50MiB --max 100MiB --duration 30s --state local
+Testing retrieval using random selection from 99 local files between 52.43 MB and 104.86 MB for 30 seconds
+Fetching ..........................
+Files fetched: 26
+Average size:  69.47 MB
+Average speed: 58.80 MB / s
+Average TTFB:  4.55367 ms
+Average TTLB:  1184.647486 ms
 ```

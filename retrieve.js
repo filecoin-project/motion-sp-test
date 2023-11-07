@@ -14,9 +14,10 @@ const argv = minimist(process.argv.slice(2))
 if (argv.help || argv.h || argv._ === 'help') {
   console.log(`Usage: ${basename(process.argv[1])} [options]`)
   console.log(`Options:
-    --min <size>        Minimum file size to consider (default 0)
-    --max <size>        Maximum file size to consider (default Infinity)
-    --duration <time>   Duration to run for (default 5m)`)
+    --min <size>              Minimum file size to consider (optional, default 0)
+    --max <size>              Maximum file size to consider (optional, default Infinity)
+    --duration <time>         Duration to run for (optional, default 5m)
+    --state any|local|remote  Only consider files with this state (optional, default any)`)
   process.exit(0)
 }
 
@@ -28,6 +29,10 @@ const fileMeta = require((isAbsolute(statusFile) ? '' : './') + statusFile)
 let minBytes = 0
 let maxBytes = Infinity
 let duration = 5 * 60 * 1000 // 5 minutes
+const state = argv.state || 'any'
+if (!['any', 'remote', 'local'].includes(state)) {
+  throw new Error('state must be one of "", "remote", or "local"')
+}
 
 if (argv.min != null) {
   minBytes = xbytes.parseSize(argv.min)
@@ -62,7 +67,13 @@ if (argv.duration != null) {
   }
 }
 
-const files = Object.values(fileMeta).filter(({ bytes }) => {
+const files = Object.values(fileMeta).filter(({ bytes, pieces }) => {
+  if (state === 'remote' && pieces.some(({ status }) => status !== 'active')) {
+    return false // no non-active deals means we shouldn't have a local copy
+  }
+  if (state === 'local' && !pieces.some(({ status }) => status !== 'active')) {
+    return false // having an active deal means we should have a local copy
+  }
   return bytes >= minBytes && bytes <= maxBytes
 })
 
@@ -70,7 +81,7 @@ if (files.length === 0) {
   throw new Error(`No files in range (between ${xbytes(minBytes)} and ${xbytes(maxBytes)})`)
 }
 
-console.log(`Testing retrieval using random selection from ${files.length} files between ${xbytes(minBytes)} and ${xbytes(maxBytes)} for ${duration / 1000} seconds`)
+console.log(`Testing retrieval using random selection from ${files.length} ${state !== 'any' ? state + ' ' : ''}files between ${xbytes(minBytes)} and ${xbytes(maxBytes)} for ${duration / 1000} seconds`)
 
 const start = Date.now()
 const end = start + duration
@@ -84,30 +95,36 @@ do {
   const sha256Transform = new SHA256Transform()
   const runStart = process.hrtime.bigint()
   let ttfb = null
-  await pipeline(
-    [], // empty body to send into the HTTP GET
-    client.pipeline({ path: u.pathname, method: 'GET' }, ({ statusCode, headers, body }) => {
-      if (statusCode !== 200) {
-        throw new Error(`Unexpected status code ${statusCode}`)
-      }
-      return body
-    }),
-    sha256Transform,
-    new Writable({
-      write (chunk, encoding, callback) {
-        if (ttfb === null) {
-          ttfb = process.hrtime.bigint() - runStart
+  try {
+    await pipeline(
+      [], // empty body to send into the HTTP GET
+      client.pipeline({ path: u.pathname, method: 'GET' }, ({ statusCode, headers, body }) => {
+        if (statusCode !== 200) {
+          throw new Error(`Unexpected status code ${statusCode}`)
         }
-        callback()
-      }
-    })
-  )
-  const ttlb = process.hrtime.bigint() - runStart
-  const bytesPerSecond = Math.round(bytes / (Number(ttlb) / 1e9))
-  if (sha256 !== sha256Transform.digest()) {
-    throw new Error(`SHA256 mismatch for ${file}`)
+        return body
+      }),
+      sha256Transform,
+      new Writable({
+        write (chunk, encoding, callback) {
+          if (ttfb === null) {
+            ttfb = process.hrtime.bigint() - runStart
+          }
+          callback()
+        }
+      })
+    )
+    const ttlb = process.hrtime.bigint() - runStart
+    const bytesPerSecond = Math.round(bytes / (Number(ttlb) / 1e9))
+    if (sha256 !== sha256Transform.digest()) {
+      throw new Error(`SHA256 mismatch for ${file}`)
+    }
+    stats.push({ bytes, bytesPerSecond, ttfb, ttlb })
+  } catch (error) {
+    console.error(`\nError fetching "${file}" from ${u.toString()}:`)
+    console.error(error)
+    process.exit(1)
   }
-  stats.push({ bytes, bytesPerSecond, ttfb, ttlb })
   process.stderr.write('.')
 } while (Date.now() < end)
 process.stderr.write('\n')
